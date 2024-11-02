@@ -6,10 +6,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Streak Tracker">
-    <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48dGV4dCB5PSIuOWVtIiBmb250LXNpemU9IjkwIj7wn5SlPC90ZXh0Pjwvc3ZnPg==">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Streak Tracker</title>
-    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU3RyZWFrIFRyYWNrZXIiLCJzaG9ydF9uYW1lIjoiU3RyZWFrZXIiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI2ZmZmZmZiIsInRoZW1lX2NvbG9yIjoiIzAwN0FGRiIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7dXRmOCw8c3ZnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zycgdmlld0JveD0nMCAwIDEwMCAxMDAnPjx0ZXh0IHk9Jy45ZW0nIGZvbnQtc2l6ZT0nOTAnPvCflKU8L3RleHQ+PC9zdmc+Iiwic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL3N2Zyt4bWwifV19">
+    <link rel="manifest" href="data:application/json;base64,ewogICAgIm5hbWUiOiAiU3RyZWFrIFRyYWNrZXIiLAogICAgInNob3J0X25hbWUiOiAiU3RyZWFrZXIiLAogICAgInN0YXJ0X3VybCI6ICIuIiwKICAgICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICAgImJhY2tncm91bmRfY29sb3IiOiAiI2ZmZmZmZiIsCiAgICAidGhlbWVfY29sb3IiOiAiIzAwN0FGRiIsCiAgICAiaWNvbnMiOiBbCiAgICAgICAgewogICAgICAgICAgICAic3JjIjogImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMlp5QjRiV3h1Y3owaWFIUjBjRG92TDNkM2R5NTNNeTVyTDJkcGRHaDFZaTl6ZG1jaUlIWnBaWGRDYjNnOUlqQWdNQ0F4TURBbE1URXdJajQ4ZEdWNGRDQjVQU0l1T1dWdElpQm1iMjUwTFhOcGVtVTlJamt3SWo3d241U2xQQzkwWlhoMFBqd3ZjM1puUGc9PSIsCiAgICAgICAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICAgICAgICB9CiAgICBdCn0=">
     <style>
         :root {
             --primary-color: #007AFF;
@@ -407,78 +407,175 @@ class NotificationManager {
     constructor() {
         this.checkInterval = null;
         this.supported = this.checkNotificationSupport();
+        this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     }
 
     checkNotificationSupport() {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        return isIOS ? window.navigator.standalone === true : 'Notification' in window;
+        if (this.isIOS) {
+            return true;
+        }
+        return 'Notification' in window;
     }
 
     async setup() {
-        if (!this.supported) {
-            throw new Error('Please add this app to your Home Screen for the best experience');
+        if (this.isIOS) {
+            if (!window.navigator.standalone) {
+                showSurprise('special', '📱 Add to Home Screen for better notifications!');
+            }
+            
+            // Prompt user to add a reminder
+            this.addIOSReminder();
+            return true;
+        } else {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                throw new Error('Notification permission required');
+            }
+            return true;
+        }
+    }
+
+    addIOSReminder() {
+        const reminderTitle = encodeURIComponent(
+            data.activityName ? 
+                `Time to ${data.activityName}!` : 
+                "Time to check in!"
+        );
+        
+        const [hours, minutes] = data.notificationTime.split(':');
+        const now = new Date();
+        const reminderDate = new Date(now);
+        reminderDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        
+        if (reminderDate < now) {
+            reminderDate.setDate(reminderDate.getDate() + 1);
         }
 
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-            throw new Error('Please enable notifications in your device settings');
-        }
+        const formattedDate = reminderDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        
+        // Create calendar event URL
+        const calendarUrl = `webcal://calendar.google.com/calendar/event?action=TEMPLATE&text=${reminderTitle}&dates=${formattedDate}/${formattedDate}&recur=RRULE:FREQ=DAILY`;
 
-        return true;
+        // Create reminders URL (iOS specific)
+        const reminderUrl = `shortcuts://run-shortcut?name=AddReminder&input=${reminderTitle}`;
+
+        const dialogDiv = document.createElement('div');
+        dialogDiv.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1001;
+            max-width: 90%;
+            width: 300px;
+        `;
+
+        dialogDiv.innerHTML = `
+            <h3 style="margin-top: 0;">Set Up Daily Reminder</h3>
+            <p>Choose how you'd like to be reminded:</p>
+            <button onclick="window.location.href='${calendarUrl}'" style="margin-bottom: 10px; width: 100%;">
+                Add to Calendar
+            </button>
+            <button onclick="window.location.href='${reminderUrl}'" style="margin-bottom: 10px; width: 100%;">
+                Add to Reminders
+            </button>
+            <button onclick="this.parentElement.remove()" style="background: #666; width: 100%;">
+                Cancel
+            </button>
+        `;
+
+        // Add overlay
+        const overlayDiv = document.createElement('div');
+        overlayDiv.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        `;
+        overlayDiv.onclick = () => {
+            overlayDiv.remove();
+            dialogDiv.remove();
+        };
+
+        document.body.appendChild(overlayDiv);
+        document.body.appendChild(dialogDiv);
+
+        showSurprise('special', '📅 Choose how you want to be reminded daily!');
     }
 
     showNotification(data, isTest = false) {
-        if (!this.supported || !data.notificationsEnabled) return;
+        if (!this.supported) return;
 
-        const lastCheck = data.lastCheckIn ? new Date(data.lastCheckIn) : null;
-        const now = new Date();
-
-        if (isTest || !lastCheck || lastCheck.toDateString() !== now.toDateString()) {
-            if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
-                if ('setAppBadge' in navigator) {
-                    navigator.setAppBadge(1).catch(console.error);
+        if (this.isIOS) {
+            // Update badge number
+            if ('setAppBadge' in navigator) {
+                navigator.setAppBadge(1).catch(console.error);
+            }
+            
+            // Show in-app notification
+            return this.showIOSNotification(data, isTest);
+        } else {
+            // Regular web notification for other platforms
+            return new Notification(
+                data.activityName ? `Time to ${data.activityName}!` : "Time to check in!", 
+                {
+                    body: isTest ? 
+                        "This is a test notification! 🔔" : 
+                        `Keep your ${data.currentStreak} day streak going! 🔥`,
+                    icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔥</text></svg>'
                 }
-                this.showIOSNotification(data, isTest);
-                return true;
-            } else {
-                const notification = new Notification(
-                    data.activityName ? `Time to ${data.activityName}!` : "Time to check in!", 
-                    {
-                        body: isTest ? 
-                            "This is a test notification! 🔔" : 
-                            `Keep your ${data.currentStreak} day streak going! 🔥`,
-                        icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔥</text></svg>'
-                    }
-                );
+            );
+        }
+    }
 
-                notification.onclick = () => {
-                    window.focus();
-                    notification.close();
-                };
-
-                return notification;
+    scheduleIOSReminder(data) {
+        // If we're in standalone mode, try to use reminders
+        if (window.navigator.standalone) {
+            try {
+                // Check if the user has granted permission to access reminders
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    const now = new Date();
+                    const reminder = new Notification(
+                        data.activityName ? `Time to ${data.activityName}!` : "Time to check in!",
+                        {
+                            body: `Keep your ${data.currentStreak} day streak going! 🔥`,
+                            timestamp: now.getTime() + (24 * 60 * 60 * 1000) // Tomorrow
+                        }
+                    );
+                }
+            } catch (error) {
+                console.log('Unable to schedule reminder:', error);
             }
         }
     }
 
     showIOSNotification(data, isTest) {
+        // Create a more iOS-like notification
         const alertDiv = document.createElement('div');
         alertDiv.style.cssText = `
             position: fixed;
             top: 10px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 12px 24px;
+            background: rgba(250, 250, 250, 0.95);
+            color: black;
+            padding: 12px;
             border-radius: 12px;
             z-index: 1000;
             max-width: 90%;
+            width: 340px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             animation: slideDown 0.5s ease-out;
-            font-size: 16px;
-            line-height: 1.4;
+            font-family: -apple-system, system-ui, sans-serif;
         `;
 
         const title = data.activityName ? `Time to ${data.activityName}!` : "Time to check in!";
@@ -487,8 +584,13 @@ class NotificationManager {
             `Keep your ${data.currentStreak} day streak going! 🔥`;
 
         alertDiv.innerHTML = `
-            <div style="font-weight: bold; margin-bottom: 4px;">${title}</div>
-            <div>${message}</div>
+            <div style="display: flex; align-items: start;">
+                <div style="width: 30px; height: 30px; margin-right: 10px;">🔥</div>
+                <div>
+                    <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">${title}</div>
+                    <div style="font-size: 14px; color: #666;">${message}</div>
+                </div>
+            </div>
         `;
 
         document.body.appendChild(alertDiv);
@@ -496,30 +598,15 @@ class NotificationManager {
         setTimeout(() => {
             alertDiv.style.animation = 'slideUp 0.5s ease-out';
             setTimeout(() => alertDiv.remove(), 500);
-        }, 3000);
+        }, 4000);
+
+        return true;
     }
 
-    scheduleNotification(time, data) {
-        if (!this.supported || !data.notificationsEnabled) return;
-
-        if (this.checkInterval) clearInterval(this.checkInterval);
-
-        const [hours, minutes] = time.split(':').map(Number);
-        const now = new Date();
-        let nextNotification = new Date(now);
-        nextNotification.setHours(hours, minutes, 0, 0);
-
-        if (nextNotification < now) {
-            nextNotification.setDate(nextNotification.getDate() + 1);
+    clearBadge() {
+        if ('clearAppBadge' in navigator) {
+            navigator.clearAppBadge().catch(console.error);
         }
-
-        const timeUntilNotification = nextNotification - now;
-        setTimeout(() => {
-            this.showNotification(data);
-            this.checkInterval = setInterval(() => {
-                this.showNotification(data);
-            }, 24 * 60 * 60 * 1000);
-        }, timeUntilNotification);
     }
 }
 
@@ -662,7 +749,7 @@ async function setupNotifications() {
         notificationManager.scheduleNotification(data.notificationTime, data);
         updateNotificationStatus();
         document.getElementById('testNotification').style.display = 'block';
-        showSurprise('special', '🔔 Daily reminders enabled! Keep that streak going!');
+        showSurprise('special', '🔔 Daily reminders enabled!');
     } catch (error) {
         console.error('Notification setup failed:', error);
         showSurprise('special', `⚠️ ${error.message}`);
@@ -672,6 +759,7 @@ async function setupNotifications() {
     }
 }
 
+// Update the notification status display
 function updateNotificationStatus() {
     const statusDiv = document.getElementById('notificationStatus');
     if (data.notificationsEnabled) {
@@ -682,6 +770,25 @@ function updateNotificationStatus() {
         statusDiv.textContent = 'Notifications are disabled';
     }
 }
+
+// Event listeners for notification-related buttons
+document.getElementById('enableNotifications').addEventListener('click', setupNotifications);
+
+document.getElementById('testNotification').addEventListener('click', () => {
+    showSurprise('special', '🔔 Test notification will appear in 5 seconds. You can close the app now to see how badges work!');
+    
+    setTimeout(() => {
+        const notification = notificationManager.showNotification(data, true);
+        if (!notification) {
+            showSurprise('special', '⚠️ Unable to send test notification. Please check notification permissions.');
+        }
+    }, 5000);
+});
+
+// Clear badge when opening the app
+window.addEventListener('focus', () => {
+    notificationManager.clearBadge();
+});
 
 // Initialize
 function initialize() {
