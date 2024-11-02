@@ -5,17 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Streak Tracker">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Streak Tracker</title>
-    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU3RyZWFrIFRyYWNrZXIiLCJzaG9ydF9uYW1lIjoiU3RyZWFrZXIiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI2ZmZmZmZiIsInRoZW1lX2NvbG9yIjoiIzAwN0FGRiJ9">
-   <style>
-    :root {
-        --primary-color: #007AFF;
-        --secondary-color: #FF9500;
-        --success-color: #34C759;
-        --danger-color: #FF3B30;
-        --background-color: #F2F2F7;
-        --card-background: #FFFFFF;
-    }
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU3RyZWFrIFRyYWNrZXIiLCJzaG9ydF9uYW1lIjoiU3RyZWFrZXIiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI2ZmZmZmZiIsInRoZW1lX2NvbG9yIjoiIzAwN0FGRiIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7dXRmOCw8c3ZnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zycgdmlld0JveD0nMCAwIDEwMCAxMDAnPjx0ZXh0IHk9Jy45ZW0nIGZvbnQtc2l6ZT0nOTAnPvCflKU8L3RleHQ+PC9zdmc+Iiwic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL3N2Zyt4bWwifV19">
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --secondary-color: #FF9500;
+            --success-color: #34C759;
+            --danger-color: #FF3B30;
+            --background-color: #F2F2F7;
+            --card-background: #FFFFFF;
+        }
 
     body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -467,51 +470,95 @@ class NotificationManager {
     }
 
     async setup() {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (!this.supported) {
+            throw new Error('Please add this app to your Home Screen for the best experience');
+        }
 
-        if (isIOS) {
-            if (!window.navigator.standalone) {
-                throw new Error('Please add this app to your Home Screen to enable notifications');
-            }
-            
-            // Request permission for iOS notifications
-            try {
-                await this.requestIOSPermission();
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            throw new Error('Please enable notifications in your device settings');
+        }
+
+        return true;
+    }
+
+    showNotification(data, isTest = false) {
+        if (!this.supported || !data.notificationsEnabled) return;
+
+        const lastCheck = data.lastCheckIn ? new Date(data.lastCheckIn) : null;
+        const now = new Date();
+
+        if (isTest || !lastCheck || lastCheck.toDateString() !== now.toDateString()) {
+            // For iOS PWA
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+                // Set badge if supported
+                if ('setAppBadge' in navigator) {
+                    navigator.setAppBadge(1).catch(error => {
+                        console.error('Error setting badge:', error);
+                    });
+                }
+                
+                // Show in-app notification
+                this.showIOSNotification(data, isTest);
                 return true;
-            } catch (error) {
-                throw new Error('Please enable notifications in your device settings');
-            }
-        } else {
-            // Regular web notification flow
-            if (!this.supported) {
-                throw new Error('Notifications not supported in this browser');
-            }
+            } else {
+                // Regular web notification for other platforms
+                const notification = new Notification(
+                    data.activityName ? `Time to ${data.activityName}!` : "Time to check in!", 
+                    {
+                        body: isTest ? 
+                            "This is a test notification! 🔔" : 
+                            `Keep your ${data.currentStreak} day streak going! 🔥`,
+                        icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔥</text></svg>'
+                    }
+                );
 
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') {
-                throw new Error('Notification permission not granted');
-            }
+                notification.onclick = () => {
+                    window.focus();
+                    notification.close();
+                };
 
-            return true;
+                return notification;
+            }
         }
     }
 
-    async requestIOSPermission() {
-        // Request permission for iOS notifications
-        if (window.Notification && Notification.requestPermission) {
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') {
-                throw new Error('Notification permission required');
-            }
-        }
-        
-        // Set up iOS-specific notification handling
-        if ('safari' in window && 'pushNotification' in window.safari) {
-            const permissionData = window.safari.pushNotification.permission('web.com.yourapp.id');
-            if (permissionData.permission === 'denied') {
-                throw new Error('Push notifications denied');
-            }
-        }
+    showIOSNotification(data, isTest) {
+        const alertDiv = document.createElement('div');
+        alertDiv.style.cssText = `
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            z-index: 1000;
+            max-width: 90%;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            animation: slideDown 0.5s ease-out;
+            font-size: 16px;
+            line-height: 1.4;
+        `;
+
+        const title = data.activityName ? `Time to ${data.activityName}!` : "Time to check in!";
+        const message = isTest ? 
+            "This is a test notification! 🔔" : 
+            `Keep your ${data.currentStreak} day streak going! 🔥`;
+
+        alertDiv.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 4px;">${title}</div>
+            <div>${message}</div>
+        `;
+
+        document.body.appendChild(alertDiv);
+
+        setTimeout(() => {
+            alertDiv.style.animation = 'slideUp 0.5s ease-out';
+            setTimeout(() => alertDiv.remove(), 500);
+        }, 3000);
     }
 
     scheduleNotification(time, data) {
@@ -536,49 +583,7 @@ class NotificationManager {
             }, 24 * 60 * 60 * 1000);
         }, timeUntilNotification);
     }
-
-    showNotification(data, isTest = false) {
-        if (!this.supported || !data.notificationsEnabled) return;
-
-        const lastCheck = data.lastCheckIn ? new Date(data.lastCheckIn) : null;
-        const now = new Date();
-
-        if (isTest || !lastCheck || lastCheck.toDateString() !== now.toDateString()) {
-            // For iOS PWA
-            if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
-                // Set badge number
-                if ('setAppBadge' in navigator) {
-                    navigator.setAppBadge(1).catch(error => {
-                        console.error('Error setting badge:', error);
-                    });
-                }
-                
-                // Create a visual notification within the app
-                this.showIOSNotification(data, isTest);
-                return true;
-            } else {
-                // Regular web notification for other platforms
-                const notification = new Notification(
-                    data.activityName ? `Time to ${data.activityName}!` : "Time to check in!", 
-                    {
-                        body: isTest ? 
-                            "This is a test notification! 🔔" : 
-                            `Keep your ${data.currentStreak} day streak going! 🔥`,
-                        badge: '/icon-192.png', // Make sure this icon exists
-                        icon: '/icon-512.png',  // Make sure this icon exists
-                        requireInteraction: true
-                    }
-                );
-
-                notification.onclick = () => {
-                    window.focus();
-                    notification.close();
-                };
-
-                return notification;
-            }
-        }
-    }
+}
 
     showIOSNotification(data, isTest) {
         const alertDiv = document.createElement('div');
