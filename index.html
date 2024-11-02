@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Daily Streak Tracker</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .question {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            color: #333;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-box {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 10px;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007AFF;
+        }
+        button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+            max-width: 300px;
+        }
+        button:disabled {
+            background: #ccc;
+        }
+        .streak-flame {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        .last-checked {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="streak-flame">🔥</div>
+        <div class="question">Did you do your activity today?</div>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-label">Current Streak</div>
+                <div class="stat-value" id="currentStreak">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Best Streak</div>
+                <div class="stat-value" id="bestStreak">0</div>
+            </div>
+        </div>
+        
+        <button id="checkInButton">Check In</button>
+        <div class="last-checked" id="lastChecked"></div>
+    </div>
+
+    <script>
+        // Load data from localStorage
+        let data = JSON.parse(localStorage.getItem('streakData')) || {
+            currentStreak: 0,
+            bestStreak: 0,
+            lastCheckIn: null
+        };
+
+        // Update UI with current data
+        function updateUI() {
+            document.getElementById('currentStreak').textContent = data.currentStreak;
+            document.getElementById('bestStreak').textContent = data.bestStreak;
+            
+            const button = document.getElementById('checkInButton');
+            const lastCheckedText = document.getElementById('lastChecked');
+            
+            if (data.lastCheckIn) {
+                const lastCheck = new Date(data.lastCheckIn);
+                const today = new Date();
+                
+                if (lastCheck.toDateString() === today.toDateString()) {
+                    button.disabled = true;
+                    button.textContent = "Already Checked In Today!";
+                    lastCheckedText.textContent = "Last checked in today";
+                } else {
+                    button.disabled = false;
+                    button.textContent = "Check In";
+                    lastCheckedText.textContent = `Last checked in: ${lastCheck.toLocaleDateString()}`;
+                }
+            }
+        }
+
+        // Handle check-in
+        document.getElementById('checkInButton').addEventListener('click', () => {
+            const now = new Date();
+            const lastCheck = data.lastCheckIn ? new Date(data.lastCheckIn) : null;
+            
+            // Check if this is a consecutive day
+            if (lastCheck) {
+                const daysSinceLastCheck = Math.floor((now - lastCheck) / (1000 * 60 * 60 * 24));
+                
+                if (daysSinceLastCheck <= 1) {
+                    data.currentStreak++;
+                } else {
+                    data.currentStreak = 1;
+                }
+            } else {
+                data.currentStreak = 1;
+            }
+            
+            // Update best streak if necessary
+            data.bestStreak = Math.max(data.currentStreak, data.bestStreak);
+            data.lastCheckIn = now.toISOString();
+            
+            // Save to localStorage
+            localStorage.setItem('streakData', JSON.stringify(data));
+            
+            // Update UI
+            updateUI();
+        });
+
+        // Initial UI update
+        updateUI();
+    </script>
+</body>
+</html>
