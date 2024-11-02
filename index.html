@@ -7,268 +7,278 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Streak Tracker</title>
     <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU3RyZWFrIFRyYWNrZXIiLCJzaG9ydF9uYW1lIjoiU3RyZWFrZXIiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI2ZmZmZmZiIsInRoZW1lX2NvbG9yIjoiIzAwN0FGRiJ9">
-    <style>
-        :root {
-            --primary-color: #007AFF;
-            --secondary-color: #FF9500;
-            --success-color: #34C759;
-            --danger-color: #FF3B30;
-            --background-color: #F2F2F7;
-            --card-background: #FFFFFF;
-        }
+   <style>
+    :root {
+        --primary-color: #007AFF;
+        --secondary-color: #FF9500;
+        --success-color: #34C759;
+        --danger-color: #FF3B30;
+        --background-color: #F2F2F7;
+        --card-background: #FFFFFF;
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            background-color: var(--background-color);
-            color: #1C1C1E;
-        }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        background-color: var(--background-color);
+        color: #1C1C1E;
+    }
 
-        .container {
-            max-width: 600px;
-            width: 100%;
-            text-align: center;
-            background: var(--card-background);
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
+    .container {
+        max-width: 600px;
+        width: 100%;
+        text-align: center;
+        background: var(--card-background);
+        padding: 2rem;
+        border-radius: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
 
-        .question {
-            font-size: 1.5rem;
-            margin-bottom: 2rem;
-            color: #1C1C1E;
-            font-weight: 600;
-        }
+    .question {
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        color: #1C1C1E;
+        font-weight: 600;
+    }
 
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
 
-        .stat-box {
-            background: var(--background-color);
-            padding: 1rem;
-            border-radius: 15px;
-            transition: transform 0.2s;
-        }
+    .stat-box {
+        background: var(--background-color);
+        padding: 1rem;
+        border-radius: 15px;
+        transition: transform 0.2s;
+    }
 
-        .stat-box:hover {
-            transform: translateY(-2px);
-        }
+    .stat-box:hover {
+        transform: translateY(-2px);
+    }
 
-        .stat-label {
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 0.5rem;
-        }
+    .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 0.5rem;
+    }
 
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
 
-        button {
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            font-size: 1.2rem;
-            border-radius: 15px;
-            cursor: pointer;
-            transition: all 0.2s;
-            width: 100%;
-            max-width: 300px;
-            margin-bottom: 1rem;
-            font-weight: 600;
-        }
+    button {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        font-size: 1.2rem;
+        border-radius: 15px;
+        cursor: pointer;
+        transition: all 0.2s;
+        width: 100%;
+        max-width: 300px;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
 
-        button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0,122,255,0.2);
-        }
+    button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,122,255,0.2);
+    }
 
-        button:disabled {
-            background: #B4B4B6;
-            transform: none;
-            box-shadow: none;
-        }
+    button:disabled {
+        background: #B4B4B6;
+        transform: none;
+        box-shadow: none;
+    }
 
-        .streak-flame {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            position: relative;
-            display: inline-block;
-        }
+    .streak-flame {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        position: relative;
+        display: inline-block;
+    }
 
-        .streak-particles {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
+    .streak-particles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
 
-        .last-checked {
-            font-size: 0.9rem;
-            color: #666;
-            margin-top: 1rem;
-        }
+    .last-checked {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 1rem;
+    }
 
-        .calendar {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-            margin: 1rem 0;
-            padding: 1rem;
-            background: var(--background-color);
-            border-radius: 15px;
-        }
+    .calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+        margin: 1rem 0;
+        padding: 1rem;
+        background: var(--background-color);
+        border-radius: 15px;
+    }
 
-        .calendar-day {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            border-radius: 8px;
-            transition: all 0.2s;
-        }
+    .calendar-day {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
 
-        .calendar-day.checked {
-            background: var(--primary-color);
-            color: white;
-            transform: scale(0.95);
-        }
+    .calendar-day.checked {
+        background: var(--primary-color);
+        color: white;
+        transform: scale(0.95);
+    }
 
-        .calendar-day.today {
-            border: 2px solid var(--primary-color);
-            font-weight: bold;
-        }
+    .calendar-day.today {
+        border: 2px solid var(--primary-color);
+        font-weight: bold;
+    }
 
-        .settings {
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid #E5E5EA;
-        }
+    .settings {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #E5E5EA;
+    }
 
-        .settings h3 {
-            color: #1C1C1E;
-            margin-bottom: 1.5rem;
-        }
+    .settings h3 {
+        color: #1C1C1E;
+        margin-bottom: 1.5rem;
+    }
 
-        .time-picker {
-            margin: 1rem 0;
-        }
+    .time-picker {
+        margin: 1rem 0;
+    }
 
-        input[type="time"], input[type="text"] {
-            padding: 0.5rem;
-            border: 1px solid #E5E5EA;
-            border-radius: 8px;
-            font-size: 1rem;
-            width: 200px;
-            margin: 0.5rem;
-        }
+    input[type="time"], input[type="text"] {
+        padding: 0.5rem;
+        border: 1px solid #E5E5EA;
+        border-radius: 8px;
+        font-size: 1rem;
+        width: 200px;
+        margin: 0.5rem;
+    }
 
-        .settings-button {
-            background: transparent;
-            color: var(--primary-color);
-            border: 1px solid var(--primary-color);
-        }
+    .settings-button {
+        background: transparent;
+        color: var(--primary-color);
+        border: 1px solid var(--primary-color);
+    }
 
-        .surprise-container {
-            min-height: 60px;
-            margin-top: 1rem;
-        }
+    .surprise-container {
+        min-height: 60px;
+        margin-top: 1rem;
+    }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
         }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 
-        @keyframes shimmer {
-            0% { background-position: -1000px 0; }
-            100% { background-position: 1000px 0; }
-        }
+    @keyframes shimmer {
+        0% { background-position: -1000px 0; }
+        100% { background-position: 1000px 0; }
+    }
 
-        .surprise-message {
-            animation: fadeInUp 0.5s ease-out;
-            padding: 1rem;
-            border-radius: 15px;
-            margin: 1rem 0;
-            background: linear-gradient(45deg, #E9F6FF, #F0F8FF);
-            border: 1px solid rgba(0,122,255,0.1);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
+    @keyframes slideDown {
+        from { transform: translate(-50%, -100%); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
+    }
 
-        .achievement {
-            animation: fadeInUp 0.6s ease-out;
-            padding: 1.5rem;
-            border-radius: 15px;
-            margin: 1rem 0;
-            background: linear-gradient(135deg, #FFD700, #FFA500);
-            color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            box-shadow: 0 4px 12px rgba(255,165,0,0.2);
-        }
+    @keyframes slideUp {
+        from { transform: translate(-50%, 0); opacity: 1; }
+        to { transform: translate(-50%, -100%); opacity: 0; }
+    }
 
-        .helper-text {
-            font-size: 0.8rem;
-            color: #666;
-            margin: 0.5rem 0;
-        }
+    .surprise-message {
+        animation: fadeInUp 0.5s ease-out;
+        padding: 1rem;
+        border-radius: 15px;
+        margin: 1rem 0;
+        background: linear-gradient(45deg, #E9F6FF, #F0F8FF);
+        border: 1px solid rgba(0,122,255,0.1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
 
-        /* Secret animation classes that will be dynamically added */
-        .milestone-unlocked {
-            animation: fadeInUp 0.8s ease-out, shimmer 2s infinite linear;
-            background: linear-gradient(90deg, 
-                rgba(255,255,255,0) 0%,
-                rgba(255,255,255,0.5) 50%,
-                rgba(255,255,255,0) 100%);
-            background-size: 1000px 100%;
-        }
+    .achievement {
+        animation: fadeInUp 0.6s ease-out;
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin: 1rem 0;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: white;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(255,165,0,0.2);
+    }
 
-        .super-streak {
-            animation: fadeInUp 0.8s ease-out;
-            background: linear-gradient(45deg, #FFD700, #FFA500, #FF6B6B);
-            color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-        }
-                .notification-status {
-            font-size: 0.9rem;
-            color: #666;
-            margin-top: 0.5rem;
-            padding: 0.5rem;
-            border-radius: 8px;
-            background: #f5f5f5;
-        }
+    .helper-text {
+        font-size: 0.8rem;
+        color: #666;
+        margin: 0.5rem 0;
+    }
 
-        .notification-status.enabled {
-            background: #E8F5E9;
-            color: #2E7D32;
-        }
+    .milestone-unlocked {
+        animation: fadeInUp 0.8s ease-out, shimmer 2s infinite linear;
+        background: linear-gradient(90deg, 
+            rgba(255,255,255,0) 0%,
+            rgba(255,255,255,0.5) 50%,
+            rgba(255,255,255,0) 100%);
+        background-size: 1000px 100%;
+    }
 
-        .notification-status.disabled {
-            background: #FFEBEE;
-            color: #C62828;
-        }
-    </style>
+    .super-streak {
+        animation: fadeInUp 0.8s ease-out;
+        background: linear-gradient(45deg, #FFD700, #FFA500, #FF6B6B);
+        color: white;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .notification-status {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 8px;
+        background: #f5f5f5;
+    }
+
+    .notification-status.enabled {
+        background: #E8F5E9;
+        color: #2E7D32;
+    }
+
+    .notification-status.disabled {
+        background: #FFEBEE;
+        color: #C62828;
+    }
+</style>
 </head>
 <body>
     <div class="container">
@@ -440,20 +450,68 @@ function showSurprise(type, message) {
 class NotificationManager {
     constructor() {
         this.checkInterval = null;
-        this.supported = 'Notification' in window;
+        this.supported = this.checkNotificationSupport();
+    }
+
+    checkNotificationSupport() {
+        // Check if it's iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        
+        if (isIOS) {
+            // Check if running as PWA
+            return window.navigator.standalone === true;
+        }
+        
+        // For non-iOS, check regular notification support
+        return 'Notification' in window;
     }
 
     async setup() {
-        if (!this.supported) {
-            throw new Error('Notifications not supported in this browser');
-        }
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-            throw new Error('Notification permission not granted');
-        }
+        if (isIOS) {
+            if (!window.navigator.standalone) {
+                throw new Error('Please add this app to your Home Screen to enable notifications');
+            }
+            
+            // Request permission for iOS notifications
+            try {
+                await this.requestIOSPermission();
+                return true;
+            } catch (error) {
+                throw new Error('Please enable notifications in your device settings');
+            }
+        } else {
+            // Regular web notification flow
+            if (!this.supported) {
+                throw new Error('Notifications not supported in this browser');
+            }
 
-        return true;
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                throw new Error('Notification permission not granted');
+            }
+
+            return true;
+        }
+    }
+
+    async requestIOSPermission() {
+        // Request permission for iOS notifications
+        if (window.Notification && Notification.requestPermission) {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+                throw new Error('Notification permission required');
+            }
+        }
+        
+        // Set up iOS-specific notification handling
+        if ('safari' in window && 'pushNotification' in window.safari) {
+            const permissionData = window.safari.pushNotification.permission('web.com.yourapp.id');
+            if (permissionData.permission === 'denied') {
+                throw new Error('Push notifications denied');
+            }
+        }
     }
 
     scheduleNotification(time, data) {
@@ -486,26 +544,86 @@ class NotificationManager {
         const now = new Date();
 
         if (isTest || !lastCheck || lastCheck.toDateString() !== now.toDateString()) {
-            const notification = new Notification(
-                data.activityName ? `Time to ${data.activityName}!` : "Time to check in!", 
-                {
-                    body: isTest ? 
-                        "This is a test notification! 🔔" : 
-                        `Keep your ${data.currentStreak} day streak going! 🔥`,
-                    requireInteraction: true
+            // For iOS PWA
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+                // Set badge number
+                if ('setAppBadge' in navigator) {
+                    navigator.setAppBadge(1).catch(error => {
+                        console.error('Error setting badge:', error);
+                    });
                 }
-            );
+                
+                // Create a visual notification within the app
+                this.showIOSNotification(data, isTest);
+                return true;
+            } else {
+                // Regular web notification for other platforms
+                const notification = new Notification(
+                    data.activityName ? `Time to ${data.activityName}!` : "Time to check in!", 
+                    {
+                        body: isTest ? 
+                            "This is a test notification! 🔔" : 
+                            `Keep your ${data.currentStreak} day streak going! 🔥`,
+                        badge: '/icon-192.png', // Make sure this icon exists
+                        icon: '/icon-512.png',  // Make sure this icon exists
+                        requireInteraction: true
+                    }
+                );
 
-            notification.onclick = () => {
-                window.focus();
-                notification.close();
-            };
+                notification.onclick = () => {
+                    window.focus();
+                    notification.close();
+                };
 
-            return notification;
+                return notification;
+            }
+        }
+    }
+
+    showIOSNotification(data, isTest) {
+        const alertDiv = document.createElement('div');
+        alertDiv.style.cssText = `
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            z-index: 1000;
+            max-width: 90%;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            animation: slideDown 0.5s ease-out;
+        `;
+
+        const title = data.activityName ? `Time to ${data.activityName}!` : "Time to check in!";
+        const message = isTest ? 
+            "This is a test notification! 🔔" : 
+            `Keep your ${data.currentStreak} day streak going! 🔥`;
+
+        alertDiv.innerHTML = `
+            <strong>${title}</strong><br>
+            ${message}
+        `;
+
+        document.body.appendChild(alertDiv);
+
+        setTimeout(() => {
+            alertDiv.style.animation = 'slideUp 0.5s ease-out';
+            setTimeout(() => alertDiv.remove(), 500);
+        }, 3000);
+    }
+
+    clearBadge() {
+        if ('clearAppBadge' in navigator) {
+            navigator.clearAppBadge().catch(error => {
+                console.error('Error clearing badge:', error);
+            });
         }
     }
 }
-
 // Initialize notification manager
 const notificationManager = new NotificationManager();
 
