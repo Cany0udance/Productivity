@@ -250,6 +250,24 @@
             color: white;
             text-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
+                .notification-status {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            background: #f5f5f5;
+        }
+
+        .notification-status.enabled {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        .notification-status.disabled {
+            background: #FFEBEE;
+            color: #C62828;
+        }
     </style>
 </head>
 <body>
@@ -278,7 +296,7 @@
         <button id="settingsButton" class="settings-button">Settings</button>
         <div class="last-checked" id="lastChecked"></div>
 
-        <div class="settings" id="settings" style="display: none;">
+ <div class="settings" id="settings" style="display: none;">
             <h3>Settings</h3>
             <div>
                 <label for="activityNameInput">Activity Name:</label>
@@ -286,19 +304,22 @@
                        placeholder="e.g., exercise, meditate, study">
             </div>
             <div class="time-picker">
-                <label for="notificationTime">Reminder Time:</label>
+                <label for="notificationTime">Daily Reminder Time:</label>
                 <input type="time" id="notificationTime" value="16:00">
-                <p class="helper-text">Set this 8 hours before your day typically ends</p>
+                <p class="helper-text">Recommended: Set this several hours before your day ends</p>
+                <div id="notificationStatus" class="notification-status">
+                    Notification status: Not configured
+                </div>
             </div>
             <button id="enableNotifications">Enable Daily Reminders</button>
+            <button id="testNotification" style="display: none;">Test Notification</button>
             <button id="resetData" style="background: var(--danger-color);">Reset All Data</button>
         </div>
         
         <div class="surprise-container" id="surpriseContainer"></div>
     </div>
-
-    <script>
-        // Initialize data structure
+<script>
+        // Previous data structure with notification additions
         let data = JSON.parse(localStorage.getItem('streakData')) || {
             currentStreak: 0,
             bestStreak: 0,
@@ -311,7 +332,7 @@
             milestones: [],
             secretUnlocks: [],
             perfectWeeks: 0,
-            longestStreak: 0
+            notificationsEnabled: false
         };
 
         // Secret features and surprises
@@ -504,6 +525,120 @@
             updateCalendar();
         }
 
+     async function setupNotifications() {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === "granted") {
+                    data.notificationsEnabled = true;
+                    localStorage.setItem('streakData', JSON.stringify(data));
+                    scheduleNotification();
+                    updateNotificationStatus();
+                    document.getElementById('testNotification').style.display = 'block';
+                    showSurprise('special', '🔔 Daily reminders enabled! Keep that streak going!');
+                } else {
+                    showSurprise('special', '❌ Please allow notifications to get daily reminders');
+                }
+            } catch (error) {
+                console.error('Notification setup failed:', error);
+                showSurprise('special', '⚠️ Notification setup failed. Please check your browser settings.');
+            }
+        }
+
+        function scheduleNotification() {
+            // Clear any existing notification check
+            if (window.notificationCheck) {
+                clearInterval(window.notificationCheck);
+            }
+
+            // Check every minute if it's time to show a notification
+            window.notificationCheck = setInterval(() => {
+                const now = new Date();
+                const targetTime = data.notificationTime.split(':');
+                const targetHour = parseInt(targetTime[0]);
+                const targetMin = parseInt(targetTime[1]);
+
+                if (now.getHours() === targetHour && now.getMinutes() === targetMin) {
+                    // Check if we haven't already checked in today
+                    const lastCheck = data.lastCheckIn ? new Date(data.lastCheckIn) : null;
+                    if (!lastCheck || lastCheck.toDateString() !== now.toDateString()) {
+                        showNotification();
+                    }
+                }
+            }, 60000); // Check every minute
+        }
+
+        function showNotification() {
+            if (data.notificationsEnabled) {
+                const notificationTitle = data.activityName ? 
+                    `Time to ${data.activityName}!` : 
+                    "Time to check in!";
+                
+                const notification = new Notification(notificationTitle, {
+                    body: `Don't break your ${data.currentStreak} day streak! 🔥`,
+                    icon: 'https://raw.githubusercontent.com/your-username/your-repo/main/icon.png', // Optional: Add your own icon
+                    badge: 'https://raw.githubusercontent.com/your-username/your-repo/main/badge.png', // Optional: Add your own badge
+                    requireInteraction: true // Makes notification stay until clicked
+                });
+
+                notification.onclick = function() {
+                    window.focus();
+                    notification.close();
+                };
+            }
+        }
+
+        function updateNotificationStatus() {
+            const statusDiv = document.getElementById('notificationStatus');
+            if (data.notificationsEnabled) {
+                statusDiv.className = 'notification-status enabled';
+                statusDiv.textContent = `Notifications enabled - Daily reminder at ${data.notificationTime}`;
+            } else {
+                statusDiv.className = 'notification-status disabled';
+                statusDiv.textContent = 'Notifications are disabled';
+            }
+        }
+
+        // Add notification time change handler
+        document.getElementById('notificationTime').addEventListener('change', (e) => {
+            data.notificationTime = e.target.value;
+            localStorage.setItem('streakData', JSON.stringify(data));
+            if (data.notificationsEnabled) {
+                scheduleNotification();
+                updateNotificationStatus();
+            }
+        });
+
+        // Add notification button handlers
+        document.getElementById('enableNotifications').addEventListener('click', setupNotifications);
+        
+        document.getElementById('testNotification').addEventListener('click', () => {
+            showNotification();
+            showSurprise('special', '🔔 Test notification sent!');
+        });
+
+        // Enhance the existing initialization
+        function initialize() {
+            document.getElementById('activityNameInput').value = data.activityName;
+            document.getElementById('activityName').textContent = 
+                data.activityName || 'do your activity';
+            document.getElementById('notificationTime').value = data.notificationTime;
+            updateUI();
+            updateNotificationStatus();
+            
+            // If notifications were previously enabled, restart them
+            if (data.notificationsEnabled) {
+                scheduleNotification();
+            }
+
+            // First time user welcome
+            if (data.totalCheckins === 0) {
+                showSurprise('special', '👋 Welcome! Ready to build an amazing streak?');
+            }
+        }
+
+        // Call initialize instead of separate initialization statements
+        initialize();
+
         // Handle check-in
         document.getElementById('checkInButton').addEventListener('click', () => {
             const now = new Date();
@@ -589,12 +724,6 @@
                 showSurprise('special', '🔄 Fresh start! Time to build new records!');
             }
         });
-
-        // Initialize
-        document.getElementById('activityNameInput').value = data.activityName;
-        document.getElementById('activityName').textContent = 
-            data.activityName || 'do your activity';
-        updateUI();
 
         // If it's their first time, show a welcome message
         if (data.totalCheckins === 0) {
