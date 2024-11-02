@@ -417,50 +417,62 @@ class NotificationManager {
         return 'Notification' in window;
     }
 
-    async setup() {
-        if (this.isIOS) {
-            if (!window.navigator.standalone) {
-                showSurprise('special', '📱 Add to Home Screen for better notifications!');
-            }
-            
-            // Prompt user to add a reminder
-            this.addIOSReminder();
-            return true;
-        } else {
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') {
-                throw new Error('Notification permission required');
-            }
-            return true;
+    // Add the missing scheduleNotification method
+    scheduleNotification(time, data) {
+        // Clear any existing interval
+        if (this.checkInterval) {
+            clearInterval(this.checkInterval);
         }
+
+        const checkTime = () => {
+            const now = new Date();
+            const [hours, minutes] = time.split(':');
+            const scheduledTime = new Date();
+            scheduledTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+            // If the scheduled time has passed today, schedule for tomorrow
+            if (now > scheduledTime) {
+                scheduledTime.setDate(scheduledTime.getDate() + 1);
+            }
+
+            // If it's within a minute of the scheduled time, show notification
+            if (Math.abs(now - scheduledTime) < 60000) {
+                this.showNotification(data);
+            }
+        };
+
+        // Check every minute
+        this.checkInterval = setInterval(checkTime, 60000);
+        // Also check immediately
+        checkTime();
     }
 
-        addIOSReminder() {
-    const reminderTitle = encodeURIComponent(
-        data.activityName ? 
-            `Time to ${data.activityName}!` : 
-            "Time to check in!"
-    );
-    
-    const [hours, minutes] = data.notificationTime.split(':');
-    const now = new Date();
-    const reminderDate = new Date(now);
-    reminderDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-    
-    if (reminderDate < now) {
-        reminderDate.setDate(reminderDate.getDate() + 1);
-    }
+    addIOSReminder() {
+        const reminderTitle = encodeURIComponent(
+            data.activityName ? 
+                `Time to ${data.activityName}!` : 
+                "Time to check in!"
+        );
+        
+        const [hours, minutes] = data.notificationTime.split(':');
+        const now = new Date();
+        const reminderDate = new Date(now);
+        reminderDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        
+        if (reminderDate < now) {
+            reminderDate.setDate(reminderDate.getDate() + 1);
+        }
 
-    // Format date for iOS calendar
-    const startDate = reminderDate.toISOString().replace(/[-:.]/g, '').split('.')[0];
-    const endDate = new Date(reminderDate.getTime() + 3600000).toISOString().replace(/[-:.]/g, '').split('.')[0];
-    
-    // Create iOS calendar URL
-    const calendarUrl = `data:text/calendar;charset=utf8,BEGIN:VCALENDAR
+        // Format date for iOS calendar
+        const startDate = reminderDate.toISOString().replace(/[:-]/g, '').split('.')[0];
+        const endDate = new Date(reminderDate.getTime() + 3600000).toISOString().replace(/[:-]/g, '').split('.')[0];
+        
+        // Create iOS calendar URL with proper formatting
+        const calendarUrl = `data:text/calendar;charset=utf8,BEGIN:VCALENDAR
 VERSION:2.0
 BEGIN:VEVENT
-DTSTART:${startDate}
-DTEND:${endDate}
+DTSTART:${startDate}Z
+DTEND:${endDate}Z
 RRULE:FREQ=DAILY
 SUMMARY:${reminderTitle}
 DESCRIPTION:Keep your streak going! 🔥
@@ -472,84 +484,81 @@ END:VALARM
 END:VEVENT
 END:VCALENDAR`.replace(/\n/g, '%0A');
 
-    // Create reminder URL (using iOS reminders URL scheme)
-    const reminderUrl = `x-apple-reminderkit://new?title=${reminderTitle}&dueDateComponents=${hours}${minutes}&recurrenceRule=FREQ=DAILY`;
+        // Create reminder URL (using iOS reminders URL scheme)
+        const reminderUrl = `x-apple-reminderkit://new?title=${reminderTitle}&dueDateComponents=${hours.padStart(2, '0')}${minutes.padStart(2, '0')}&recurrenceRule=FREQ=DAILY`;
 
-    const dialogDiv = document.createElement('div');
-    dialogDiv.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        z-index: 1001;
-        max-width: 90%;
-        width: 300px;
-    `;
+        const dialogDiv = document.createElement('div');
+        dialogDiv.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1001;
+            max-width: 90%;
+            width: 300px;
+        `;
 
-    // Create temporary link for calendar download
-    const calendarLink = document.createElement('a');
-    calendarLink.href = calendarUrl;
-    calendarLink.download = 'streak-reminder.ics';
-    
-    dialogDiv.innerHTML = `
-        <h3 style="margin-top: 0;">Set Up Daily Reminder</h3>
-        <p>Choose how you'd like to be reminded:</p>
-        <button id="addToCalendarBtn" style="margin-bottom: 10px; width: 100%;">
-            Add to Calendar
-        </button>
-        <button id="addToRemindersBtn" style="margin-bottom: 10px; width: 100%;">
-            Add to Reminders
-        </button>
-        <p style="font-size: 0.9em; color: #666;">Calendar will create an event with an alert<br>
-        Reminders will create a recurring reminder</p>
-        <button onclick="this.parentElement.remove()" style="background: #666; width: 100%;">
-            Cancel
-        </button>
-    `;
+        // Create temporary link for calendar download
+        const calendarLink = document.createElement('a');
+        calendarLink.href = calendarUrl;
+        calendarLink.download = 'streak-reminder.ics';
+        
+        dialogDiv.innerHTML = `
+            <h3 style="margin-top: 0;">Set Up Daily Reminder</h3>
+            <p>Choose how you'd like to be reminded:</p>
+            <button id="addToCalendarBtn" style="margin-bottom: 10px; width: 100%;">
+                Add to Calendar
+            </button>
+            <button id="addToRemindersBtn" style="margin-bottom: 10px; width: 100%;">
+                Add to Reminders
+            </button>
+            <p style="font-size: 0.9em; color: #666;">Calendar will create an event with an alert<br>
+            Reminders will create a recurring reminder</p>
+            <button id="cancelReminderBtn" style="background: #666; width: 100%;">
+                Cancel
+            </button>
+        `;
 
-    // Add overlay
-    const overlayDiv = document.createElement('div');
-    overlayDiv.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 1000;
-    `;
-    overlayDiv.onclick = () => {
-        overlayDiv.remove();
-        dialogDiv.remove();
-    };
+        // Add overlay
+        const overlayDiv = document.createElement('div');
+        overlayDiv.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        `;
 
-    document.body.appendChild(overlayDiv);
-    document.body.appendChild(dialogDiv);
-
-    // Add click handler for calendar button
-    document.getElementById('addToCalendarBtn').onclick = () => {
-        calendarLink.click();
-        showSurprise('special', '📅 Opening Calendar... Check your calendar app to confirm the reminder!');
-        setTimeout(() => {
-            dialogDiv.remove();
+        const cleanup = () => {
             overlayDiv.remove();
-        }, 2000);
-    };
-
-    // Add click handler for reminders button
-    document.getElementById('addToRemindersBtn').onclick = () => {
-        window.location.href = reminderUrl;
-        showSurprise('special', '📝 Opening Reminders... Check your reminders app to confirm!');
-        setTimeout(() => {
             dialogDiv.remove();
-            overlayDiv.remove();
-        }, 2000);
-    };
-}
+        };
+
+        overlayDiv.onclick = cleanup;
+        document.body.appendChild(overlayDiv);
+        document.body.appendChild(dialogDiv);
+
+        // Add click handlers
+        document.getElementById('addToCalendarBtn').onclick = () => {
+            calendarLink.click();
+            showSurprise('special', '📅 Calendar event created! Check your calendar app to confirm the reminder.');
+            setTimeout(cleanup, 2000);
+        };
+
+        document.getElementById('addToRemindersBtn').onclick = () => {
+            window.location.href = reminderUrl;
+            showSurprise('special', '📝 Opening Reminders... Check your reminders app to confirm!');
+            setTimeout(cleanup, 2000);
+        };
+
+        document.getElementById('cancelReminderBtn').onclick = cleanup;
+    }
 
     showNotification(data, isTest = false) {
         if (!this.supported) return;
