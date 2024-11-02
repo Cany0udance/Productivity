@@ -332,7 +332,6 @@
         <div class="surprise-container" id="surpriseContainer"></div>
     </div>
 <script>
-// Debounce function for performance optimization
 // Previous data structure with notification additions
 let data = JSON.parse(localStorage.getItem('streakData')) || {
     currentStreak: 0,
@@ -348,24 +347,6 @@ let data = JSON.parse(localStorage.getItem('streakData')) || {
     perfectWeeks: 0,
     notificationsEnabled: false
 };
-
-// Debounce function for performance optimization
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-// Sanitize user input
-function sanitizeInput(input) {
-    return input.replace(/[<>]/g, '');
-}
 
 // Secret features and surprises
 const surprises = {
@@ -421,35 +402,7 @@ const surprises = {
     }
 };
 
-// Function to show surprise messages with fancy effects
-function showSurprise(type, message) {
-    const container = document.getElementById('surpriseContainer');
-    const element = document.createElement('div');
-    
-    switch(type) {
-        case 'milestone':
-            element.className = 'achievement milestone-unlocked';
-            break;
-        case 'special':
-            element.className = 'surprise-message';
-            break;
-        case 'secret':
-            element.className = 'achievement super-streak';
-            break;
-        default:
-            element.className = 'surprise-message';
-    }
-    
-    element.textContent = message;
-    container.insertBefore(element, container.firstChild);
-
-    setTimeout(() => {
-        element.style.animation = 'fadeInUp 0.5s reverse';
-        setTimeout(() => element.remove(), 500);
-    }, 5000);
-}
-
-// Enhanced notification system
+// Notification Manager Class
 class NotificationManager {
     constructor() {
         this.checkInterval = null;
@@ -457,16 +410,8 @@ class NotificationManager {
     }
 
     checkNotificationSupport() {
-        // Check if it's iOS
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        
-        if (isIOS) {
-            // Check if running as PWA
-            return window.navigator.standalone === true;
-        }
-        
-        // For non-iOS, check regular notification support
-        return 'Notification' in window;
+        return isIOS ? window.navigator.standalone === true : 'Notification' in window;
     }
 
     async setup() {
@@ -489,20 +434,13 @@ class NotificationManager {
         const now = new Date();
 
         if (isTest || !lastCheck || lastCheck.toDateString() !== now.toDateString()) {
-            // For iOS PWA
             if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
-                // Set badge if supported
                 if ('setAppBadge' in navigator) {
-                    navigator.setAppBadge(1).catch(error => {
-                        console.error('Error setting badge:', error);
-                    });
+                    navigator.setAppBadge(1).catch(console.error);
                 }
-                
-                // Show in-app notification
                 this.showIOSNotification(data, isTest);
                 return true;
             } else {
-                // Regular web notification for other platforms
                 const notification = new Notification(
                     data.activityName ? `Time to ${data.activityName}!` : "Time to check in!", 
                     {
@@ -585,52 +523,36 @@ class NotificationManager {
     }
 }
 
-    showIOSNotification(data, isTest) {
-        const alertDiv = document.createElement('div');
-        alertDiv.style.cssText = `
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 12px;
-            z-index: 1000;
-            max-width: 90%;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            animation: slideDown 0.5s ease-out;
-        `;
-
-        const title = data.activityName ? `Time to ${data.activityName}!` : "Time to check in!";
-        const message = isTest ? 
-            "This is a test notification! 🔔" : 
-            `Keep your ${data.currentStreak} day streak going! 🔥`;
-
-        alertDiv.innerHTML = `
-            <strong>${title}</strong><br>
-            ${message}
-        `;
-
-        document.body.appendChild(alertDiv);
-
-        setTimeout(() => {
-            alertDiv.style.animation = 'slideUp 0.5s ease-out';
-            setTimeout(() => alertDiv.remove(), 500);
-        }, 3000);
-    }
-
-    clearBadge() {
-        if ('clearAppBadge' in navigator) {
-            navigator.clearAppBadge().catch(error => {
-                console.error('Error clearing badge:', error);
-            });
-        }
-    }
-}
 // Initialize notification manager
 const notificationManager = new NotificationManager();
+
+// Function to show surprise messages
+function showSurprise(type, message) {
+    const container = document.getElementById('surpriseContainer');
+    const element = document.createElement('div');
+    
+    switch(type) {
+        case 'milestone':
+            element.className = 'achievement milestone-unlocked';
+            break;
+        case 'special':
+            element.className = 'surprise-message';
+            break;
+        case 'secret':
+            element.className = 'achievement super-streak';
+            break;
+        default:
+            element.className = 'surprise-message';
+    }
+    
+    element.textContent = message;
+    container.insertBefore(element, container.firstChild);
+
+    setTimeout(() => {
+        element.style.animation = 'fadeInUp 0.5s reverse';
+        setTimeout(() => element.remove(), 500);
+    }, 5000);
+}
 
 // Check for special achievements
 function checkSpecialAchievements() {
@@ -705,7 +627,7 @@ function updateCalendar() {
     }
 }
 
-// Update UI with current data
+// Update UI
 function updateUI() {
     document.getElementById('currentStreak').textContent = data.currentStreak;
     document.getElementById('bestStreak').textContent = data.bestStreak;
@@ -761,7 +683,7 @@ function updateNotificationStatus() {
     }
 }
 
-// Initialize everything
+// Initialize
 function initialize() {
     document.getElementById('activityNameInput').value = data.activityName;
     document.getElementById('activityName').textContent = 
@@ -770,7 +692,7 @@ function initialize() {
     updateUI();
     updateNotificationStatus();
     
-    if (data.notificationsEnabled) {
+if (data.notificationsEnabled) {
         notificationManager.scheduleNotification(data.notificationTime, data);
     }
 
@@ -817,7 +739,7 @@ document.getElementById('checkInButton').addEventListener('click', () => {
 
     checkSpecialAchievements();
     localStorage.setItem('streakData', JSON.stringify(data));
-updateUI();
+    updateUI();
 });
 
 // Settings toggle
@@ -828,7 +750,7 @@ document.getElementById('settingsButton').addEventListener('click', () => {
 
 // Activity name handling
 document.getElementById('activityNameInput').addEventListener('input', (e) => {
-    const sanitizedInput = sanitizeInput(e.target.value);
+    const sanitizedInput = e.target.value.replace(/[<>]/g, '');
     data.activityName = sanitizedInput;
     document.getElementById('activityName').textContent = 
         sanitizedInput || 'do your activity';
@@ -856,10 +778,10 @@ document.getElementById('testNotification').addEventListener('click', () => {
         if (!notification) {
             showSurprise('special', '⚠️ Unable to send test notification. Please check notification permissions.');
         }
-    }, 10000); // 10 second delay
+    }, 10000);
 });
 
-// Reset data
+// Reset data handler
 document.getElementById('resetData').addEventListener('click', () => {
     if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
         data = {
