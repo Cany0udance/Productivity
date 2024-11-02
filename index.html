@@ -453,29 +453,30 @@ class NotificationManager {
             }, 24 * 60 * 60 * 1000); // 24 hours
         }, timeUntilNotification);
     }
+    
+showNotification(data, isTest = false) {
+    if (!this.supported || !data.notificationsEnabled) return;
 
-    showNotification(data) {
-        if (!this.supported || !data.notificationsEnabled) return;
+    const lastCheck = data.lastCheckIn ? new Date(data.lastCheckIn) : null;
+    const now = new Date();
 
-        const lastCheck = data.lastCheckIn ? new Date(data.lastCheckIn) : null;
-        const now = new Date();
+    if (isTest || !lastCheck || lastCheck.toDateString() !== now.toDateString()) {
+        const notification = new Notification(
+            data.activityName ? `Time to ${data.activityName}!` : "Time to check in!", 
+            {
+                body: isTest ? 
+                    "This is a test notification! 🔔" : 
+                    `Keep your ${data.currentStreak} day streak going! 🔥`,
+                requireInteraction: true
+            }
+        );
 
-        if (!lastCheck || lastCheck.toDateString() !== now.toDateString()) {
-            const notification = new Notification(
-                data.activityName ? `Time to ${data.activityName}!` : "Time to check in!", 
-                {
-                    body: `Keep your ${data.currentStreak} day streak going! 🔥`,
-                    requireInteraction: true
-                }
-            );
+        notification.onclick = () => {
+            window.focus();
+            notification.close();
+        };
 
-            notification.onclick = () => {
-                window.focus();
-                notification.close();
-            };
-
-            return notification;
-        }
+        return notification;
     }
 }
 
@@ -748,12 +749,15 @@ document.getElementById('notificationTime').addEventListener('change', (e) => {
 document.getElementById('enableNotifications').addEventListener('click', setupNotifications);
 
 document.getElementById('testNotification').addEventListener('click', () => {
-    const notification = notificationManager.showNotification(data);
-    if (notification) {
-        showSurprise('special', '🔔 Test notification sent!');
-    } else {
-        showSurprise('special', '⚠️ Unable to send test notification. Please check notification permissions.');
-    }
+    showSurprise('special', '🔔 Test notification will appear in 10 seconds. You can close the app now to see how it works!');
+    
+    setTimeout(() => {
+        const notification = notificationManager.showNotification(data, true);
+        if (!notification) {
+            // If notification fails, we'll show this in the app if it's still open
+            showSurprise('special', '⚠️ Unable to send test notification. Please check notification permissions.');
+        }
+    }, 10000); // 10 second delay
 });
 
 // Reset data
