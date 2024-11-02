@@ -4,8 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Daily Streak Tracker</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Streak Tracker</title>
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU3RyZWFrIFRyYWNrZXIiLCJzaG9ydF9uYW1lIjoiU3RyZWFrZXIiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI2ZmZmZmZiIsInRoZW1lX2NvbG9yIjoiIzAwN0FGRiJ9">
     <style>
+        :root {
+            --primary-color: #007AFF;
+            --secondary-color: #FF9500;
+            --success-color: #34C759;
+            --danger-color: #FF3B30;
+            --background-color: #F2F2F7;
+            --card-background: #FFFFFF;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
@@ -14,72 +25,237 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            background-color: #f5f5f5;
+            background-color: var(--background-color);
+            color: #1C1C1E;
         }
+
         .container {
             max-width: 600px;
             width: 100%;
             text-align: center;
-            background: white;
+            background: var(--card-background);
             padding: 2rem;
-            border-radius: 15px;
+            border-radius: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
+
         .question {
             font-size: 1.5rem;
             margin-bottom: 2rem;
-            color: #333;
+            color: #1C1C1E;
+            font-weight: 600;
         }
+
         .stats {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
             margin-bottom: 2rem;
         }
+
         .stat-box {
-            background: #f8f9fa;
+            background: var(--background-color);
             padding: 1rem;
-            border-radius: 10px;
+            border-radius: 15px;
+            transition: transform 0.2s;
         }
+
+        .stat-box:hover {
+            transform: translateY(-2px);
+        }
+
         .stat-label {
             font-size: 0.9rem;
             color: #666;
+            margin-bottom: 0.5rem;
         }
+
         .stat-value {
             font-size: 2rem;
             font-weight: bold;
-            color: #007AFF;
+            color: var(--primary-color);
         }
+
         button {
-            background: #007AFF;
+            background: var(--primary-color);
             color: white;
             border: none;
             padding: 1rem 2rem;
             font-size: 1.2rem;
-            border-radius: 10px;
+            border-radius: 15px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s;
             width: 100%;
             max-width: 300px;
-        }
-        button:disabled {
-            background: #ccc;
-        }
-        .streak-flame {
-            font-size: 2rem;
             margin-bottom: 1rem;
+            font-weight: 600;
         }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,122,255,0.2);
+        }
+
+        button:disabled {
+            background: #B4B4B6;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .streak-flame {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .streak-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
         .last-checked {
             font-size: 0.9rem;
             color: #666;
             margin-top: 1rem;
         }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: var(--background-color);
+            border-radius: 15px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .calendar-day.checked {
+            background: var(--primary-color);
+            color: white;
+            transform: scale(0.95);
+        }
+
+        .calendar-day.today {
+            border: 2px solid var(--primary-color);
+            font-weight: bold;
+        }
+
+        .settings {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #E5E5EA;
+        }
+
+        .settings h3 {
+            color: #1C1C1E;
+            margin-bottom: 1.5rem;
+        }
+
+        .time-picker {
+            margin: 1rem 0;
+        }
+
+        input[type="time"], input[type="text"] {
+            padding: 0.5rem;
+            border: 1px solid #E5E5EA;
+            border-radius: 8px;
+            font-size: 1rem;
+            width: 200px;
+            margin: 0.5rem;
+        }
+
+        .settings-button {
+            background: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+
+        .surprise-container {
+            min-height: 60px;
+            margin-top: 1rem;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+
+        .surprise-message {
+            animation: fadeInUp 0.5s ease-out;
+            padding: 1rem;
+            border-radius: 15px;
+            margin: 1rem 0;
+            background: linear-gradient(45deg, #E9F6FF, #F0F8FF);
+            border: 1px solid rgba(0,122,255,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .achievement {
+            animation: fadeInUp 0.6s ease-out;
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin: 1rem 0;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(255,165,0,0.2);
+        }
+
+        .helper-text {
+            font-size: 0.8rem;
+            color: #666;
+            margin: 0.5rem 0;
+        }
+
+        /* Secret animation classes that will be dynamically added */
+        .milestone-unlocked {
+            animation: fadeInUp 0.8s ease-out, shimmer 2s infinite linear;
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0) 0%,
+                rgba(255,255,255,0.5) 50%,
+                rgba(255,255,255,0) 100%);
+            background-size: 1000px 100%;
+        }
+
+        .super-streak {
+            animation: fadeInUp 0.8s ease-out;
+            background: linear-gradient(45deg, #FFD700, #FFA500, #FF6B6B);
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="streak-flame">🔥</div>
-        <div class="question">Did you do your activity today?</div>
+        <div class="streak-flame" id="streakFlame">🔥</div>
+        <div class="question">Did you <span id="activityName">do your activity</span> today?</div>
         
         <div class="stats">
             <div class="stat-box">
@@ -90,24 +266,222 @@
                 <div class="stat-label">Best Streak</div>
                 <div class="stat-value" id="bestStreak">0</div>
             </div>
+            <div class="stat-box">
+                <div class="stat-label">Total Check-ins</div>
+                <div class="stat-value" id="totalCheckins">0</div>
+            </div>
         </div>
         
+        <div class="calendar" id="calendar"></div>
+        
         <button id="checkInButton">Check In</button>
+        <button id="settingsButton" class="settings-button">Settings</button>
         <div class="last-checked" id="lastChecked"></div>
+
+        <div class="settings" id="settings" style="display: none;">
+            <h3>Settings</h3>
+            <div>
+                <label for="activityNameInput">Activity Name:</label>
+                <input type="text" id="activityNameInput" 
+                       placeholder="e.g., exercise, meditate, study">
+            </div>
+            <div class="time-picker">
+                <label for="notificationTime">Reminder Time:</label>
+                <input type="time" id="notificationTime" value="16:00">
+                <p class="helper-text">Set this 8 hours before your day typically ends</p>
+            </div>
+            <button id="enableNotifications">Enable Daily Reminders</button>
+            <button id="resetData" style="background: var(--danger-color);">Reset All Data</button>
+        </div>
+        
+        <div class="surprise-container" id="surpriseContainer"></div>
     </div>
 
     <script>
-        // Load data from localStorage
+        // Initialize data structure
         let data = JSON.parse(localStorage.getItem('streakData')) || {
             currentStreak: 0,
             bestStreak: 0,
-            lastCheckIn: null
+            totalCheckins: 0,
+            lastCheckIn: null,
+            checkedDates: [],
+            notificationTime: '16:00',
+            activityName: '',
+            achievements: [],
+            milestones: [],
+            secretUnlocks: [],
+            perfectWeeks: 0,
+            longestStreak: 0
         };
+
+        // Secret features and surprises
+        const surprises = {
+            streakMilestones: {
+                3: "🌱 Three days! A habit is forming!",
+                7: "🌟 One week strong! You're building something special!",
+                14: "🏆 Two weeks of dedication! You're becoming unstoppable!",
+                21: "💫 Three weeks! This is becoming part of who you are!",
+                30: "🎯 Monthly master! You're showing incredible commitment!",
+                50: "🚀 Halfway to 100! Your dedication is inspiring!",
+                69: "😎 Nice...",
+                75: "⭐ Three-quarters to 100! The force is strong with this one!",
+                100: "🎊 LEGENDARY STATUS ACHIEVED! Triple digits! You're amazing!",
+                365: "🌈 ONE FULL YEAR! You're absolutely incredible!"
+            },
+            randomEncouragement: [
+                "💪 Every check-in builds your strength!",
+                "🌱 Small steps, big changes!",
+                "⭐ You're doing amazing!",
+                "🎯 Right on target!",
+                "🚀 Unstoppable!",
+                "✨ Look at you go!",
+                "🌟 Building excellence, one day at a time!",
+                "💫 Your future self thanks you!",
+                "🔥 You're on fire!",
+                "⚡ Nothing can stop you now!",
+                "🌈 Creating positive changes!",
+                "🎨 Painting your masterpiece, day by day!",
+                "🎯 Bullseye! Another day of progress!",
+                "🎭 Plot twist: You're becoming unstoppable!",
+                "🎪 Making it happen, rain or shine!"
+            ],
+            specialDays: {
+                perfectWeek: "🌈 Perfect week achieved! Absolutely crushing it!",
+                comebackDay: "🚀 Welcome back! Today is a new beginning!",
+                newBestStreak: "📈 New personal best! You're reaching new heights!",
+                earlyBird: "🌅 Early check-in! Starting strong!",
+                nightOwl: "🌙 Night owl check-in! Finishing strong!",
+                weekendWarrior: "🎮 Weekend warrior! No days off!",
+                mondayMotivation: "💼 Monday momentum! Starting the week right!"
+            },
+            secretAchievements: {
+                // These are discovered through special combinations or timing
+                earlyStreak: "🌅 Early Bird: 5 check-ins before 9am!",
+                nightStreak: "🦉 Night Owl: 5 check-ins after 10pm!",
+                perfectMonth: "📅 Perfect Month: Every day for a calendar month!",
+                weekendStreak: "🎮 Weekend Warrior: 4 weekends in a row!",
+                seasonal: "🍁 Seasonal Master: Hit streaks in all seasons!",
+                goldenHour: "✨ Golden Hour: Check in at sunset!",
+                luckyNumbers: "🎲 Lucky Numbers: Hit special streak numbers!",
+                palindrome: "🔄 Palindrome Day: Check in on a palindrome date!",
+                fibonacci: "🌀 Fibonacci Streak: Hit Fibonacci sequence numbers!",
+                primeStreak: "🔢 Prime Streak: Hit prime number streaks!"
+            }
+        };
+
+        // Function to show surprise messages with fancy effects
+        function showSurprise(type, message) {
+            const container = document.getElementById('surpriseContainer');
+            const element = document.createElement('div');
+            
+            switch(type) {
+                case 'milestone':
+                    element.className = 'achievement milestone-unlocked';
+                    break;
+                case 'special':
+                    element.className = 'surprise-message';
+                    break;
+                case 'secret':
+                    element.className = 'achievement super-streak';
+                    break;
+                default:
+                    element.className = 'surprise-message';
+            }
+            
+            element.textContent = message;
+            container.insertBefore(element, container.firstChild);
+// Remove the message after some time
+            setTimeout(() => {
+                element.style.animation = 'fadeInUp 0.5s reverse';
+                setTimeout(() => element.remove(), 500);
+            }, 5000);
+        }
+
+        // Check for special achievements
+        function checkSpecialAchievements() {
+            const now = new Date();
+            const hour = now.getHours();
+            const dayOfWeek = now.getDay();
+            
+            // Early bird check
+            if (hour < 9 && !data.secretUnlocks.includes('earlyBird')) {
+                data.secretUnlocks.push('earlyBird');
+                showSurprise('secret', surprises.secretAchievements.earlyStreak);
+            }
+            
+            // Night owl check
+            if (hour >= 22 && !data.secretUnlocks.includes('nightOwl')) {
+                data.secretUnlocks.push('nightOwl');
+                showSurprise('secret', surprises.secretAchievements.nightStreak);
+            }
+            
+            // Weekend warrior
+            if ((dayOfWeek === 0 || dayOfWeek === 6) && !data.secretUnlocks.includes('weekend')) {
+                data.secretUnlocks.push('weekend');
+                showSurprise('secret', surprises.secretAchievements.weekendStreak);
+            }
+
+            // Perfect week check
+            const lastSevenDays = data.checkedDates.slice(-7);
+            if (lastSevenDays.length === 7 && !data.secretUnlocks.includes('perfectWeek')) {
+                data.perfectWeeks++;
+                data.secretUnlocks.push('perfectWeek');
+                showSurprise('special', surprises.specialDays.perfectWeek);
+            }
+
+            // Fibonacci sequence check (1,1,2,3,5,8,13,21,34,55,89)
+            const fibNumbers = [1,1,2,3,5,8,13,21,34,55,89];
+            if (fibNumbers.includes(data.currentStreak) && !data.secretUnlocks.includes(`fib${data.currentStreak}`)) {
+                data.secretUnlocks.push(`fib${data.currentStreak}`);
+                showSurprise('secret', '🌀 Fibonacci Sequence Achievement Unlocked!');
+            }
+
+            // Prime number streaks (2,3,5,7,11,13,17,19,23,29,31,37,41,43,47)
+            const primeNumbers = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47];
+            if (primeNumbers.includes(data.currentStreak) && !data.secretUnlocks.includes(`prime${data.currentStreak}`)) {
+                data.secretUnlocks.push(`prime${data.currentStreak}`);
+                showSurprise('secret', '🔢 Prime Number Streak Achievement Unlocked!');
+            }
+
+            // Check for palindrome date (e.g., 2024-02-02)
+            const dateStr = now.toISOString().split('T')[0].replace(/-/g, '');
+            if (dateStr === dateStr.split('').reverse().join('') && !data.secretUnlocks.includes('palindrome')) {
+                data.secretUnlocks.push('palindrome');
+                showSurprise('secret', surprises.secretAchievements.palindrome);
+            }
+        }
+
+        // Generate calendar view
+        function updateCalendar() {
+            const calendar = document.getElementById('calendar');
+            calendar.innerHTML = '';
+            
+            const today = new Date();
+            const startDate = new Date(today);
+            startDate.setDate(startDate.getDate() - 27);
+            
+            for (let i = 0; i < 28; i++) {
+                const date = new Date(startDate);
+                date.setDate(date.getDate() + i);
+                
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day';
+                if (date.toDateString() === today.toDateString()) {
+                    dayEl.classList.add('today');
+                }
+                if (data.checkedDates.includes(date.toDateString())) {
+                    dayEl.classList.add('checked');
+                }
+                dayEl.textContent = date.getDate();
+                calendar.appendChild(dayEl);
+            }
+        }
 
         // Update UI with current data
         function updateUI() {
             document.getElementById('currentStreak').textContent = data.currentStreak;
             document.getElementById('bestStreak').textContent = data.bestStreak;
+            document.getElementById('totalCheckins').textContent = data.totalCheckins;
             
             const button = document.getElementById('checkInButton');
             const lastCheckedText = document.getElementById('lastChecked');
@@ -126,6 +500,8 @@
                     lastCheckedText.textContent = `Last checked in: ${lastCheck.toLocaleDateString()}`;
                 }
             }
+            
+            updateCalendar();
         }
 
         // Handle check-in
@@ -140,25 +516,90 @@
                 if (daysSinceLastCheck <= 1) {
                     data.currentStreak++;
                 } else {
+                    if (data.currentStreak > 1) {
+                        showSurprise('special', surprises.specialDays.comebackDay);
+                    }
                     data.currentStreak = 1;
                 }
             } else {
                 data.currentStreak = 1;
             }
             
-            // Update best streak if necessary
+            // Update stats
             data.bestStreak = Math.max(data.currentStreak, data.bestStreak);
+            data.totalCheckins++;
             data.lastCheckIn = now.toISOString();
+            data.checkedDates.push(now.toDateString());
+
+            // Check for milestones
+            if (surprises.streakMilestones[data.currentStreak]) {
+                showSurprise('milestone', surprises.streakMilestones[data.currentStreak]);
+            }
+
+            // Random encouragement (30% chance)
+            if (Math.random() < 0.3) {
+                const message = surprises.randomEncouragement[
+                    Math.floor(Math.random() * surprises.randomEncouragement.length)
+                ];
+                showSurprise('special', message);
+            }
+
+            // Check for special achievements
+            checkSpecialAchievements();
             
-            // Save to localStorage
+            // Save data
             localStorage.setItem('streakData', JSON.stringify(data));
             
             // Update UI
             updateUI();
         });
 
-        // Initial UI update
+        // Settings toggle
+        document.getElementById('settingsButton').addEventListener('click', () => {
+            const settings = document.getElementById('settings');
+            settings.style.display = settings.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Activity name handling
+        document.getElementById('activityNameInput').addEventListener('input', (e) => {
+            data.activityName = e.target.value;
+            document.getElementById('activityName').textContent = 
+                data.activityName || 'do your activity';
+            localStorage.setItem('streakData', JSON.stringify(data));
+        });
+
+        // Reset data
+        document.getElementById('resetData').addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
+                data = {
+                    currentStreak: 0,
+                    bestStreak: 0,
+                    totalCheckins: 0,
+                    lastCheckIn: null,
+                    checkedDates: [],
+                    notificationTime: '16:00',
+                    activityName: data.activityName, // Preserve activity name
+                    achievements: [],
+                    milestones: [],
+                    secretUnlocks: [],
+                    perfectWeeks: 0
+                };
+                localStorage.setItem('streakData', JSON.stringify(data));
+                updateUI();
+                showSurprise('special', '🔄 Fresh start! Time to build new records!');
+            }
+        });
+
+        // Initialize
+        document.getElementById('activityNameInput').value = data.activityName;
+        document.getElementById('activityName').textContent = 
+            data.activityName || 'do your activity';
         updateUI();
+
+        // If it's their first time, show a welcome message
+        if (data.totalCheckins === 0) {
+            showSurprise('special', '👋 Welcome! Ready to build an amazing streak?');
+        }
     </script>
 </body>
 </html>
