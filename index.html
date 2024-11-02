@@ -892,179 +892,166 @@ function updateUI() {
     updateCalendar();
 }
 
-async function setupNotifications() {
-    try {
-        await notificationManager.setup();
-        data.notificationsEnabled = true;
-        localStorage.setItem('streakData', JSON.stringify(data));
-        notificationManager.scheduleNotification(data.notificationTime, data);
-        updateNotificationStatus();
-        document.getElementById('testNotification').style.display = 'block';
-        showSurprise('special', '🔔 Daily reminders enabled!');
-    } catch (error) {
-        console.error('Notification setup failed:', error);
-        showSurprise('special', `⚠️ ${error.message}`);
-        data.notificationsEnabled = false;
-        localStorage.setItem('streakData', JSON.stringify(data));
-        updateNotificationStatus();
-    }
-}
-
-// Update the notification status display
-function updateNotificationStatus() {
-    const statusDiv = document.getElementById('notificationStatus');
-    if (data.notificationsEnabled) {
-        statusDiv.className = 'notification-status enabled';
-        statusDiv.textContent = `Notifications enabled - Daily reminder at ${data.notificationTime}`;
-    } else {
-        statusDiv.className = 'notification-status disabled';
-        statusDiv.textContent = 'Notifications are disabled';
-    }
-}
-
-// Event listeners for notification-related buttons
-document.getElementById('enableNotifications').addEventListener('click', setupNotifications);
-
-document.getElementById('testNotification').addEventListener('click', () => {
-    showSurprise('special', '🔔 Test notification will appear in 5 seconds. You can close the app now to see how badges work!');
-    
-    setTimeout(() => {
-        const notification = notificationManager.showNotification(data, true);
-        if (!notification) {
-            showSurprise('special', '⚠️ Unable to send test notification. Please check notification permissions.');
-        }
-    }, 5000);
-});
-
-// Clear badge when opening the app
-window.addEventListener('focus', () => {
-    notificationManager.clearBadge();
-});
-
-// Initialize
-function initialize() {
-    document.getElementById('activityNameInput').value = data.activityName;
-    document.getElementById('activityName').textContent = 
-        data.activityName || 'do your activity';
-    document.getElementById('notificationTime').value = data.notificationTime;
-    updateUI();
-    updateNotificationStatus();
-    
-if (data.notificationsEnabled) {
-        notificationManager.scheduleNotification(data.notificationTime, data);
-    }
-
-    if (data.totalCheckins === 0) {
-        showSurprise('special', '👋 Welcome! Ready to build an amazing streak?');
-    }
-}
-
-// Event Listeners
-document.getElementById('checkInButton').addEventListener('click', () => {
-    const now = new Date();
-    const lastCheck = data.lastCheckIn ? new Date(data.lastCheckIn) : null;
-    
-    if (lastCheck) {
-        const daysSinceLastCheck = Math.floor((now - lastCheck) / (1000 * 60 * 60 * 24));
-        
-        if (daysSinceLastCheck <= 1) {
-            data.currentStreak++;
-        } else {
-            if (data.currentStreak > 1) {
-                showSurprise('special', surprises.specialDays.comebackDay);
+document.addEventListener('DOMContentLoaded', () => {
+            async function setupNotifications() {
+                try {
+                    await notificationManager.setup();
+                    data.notificationsEnabled = true;
+                    localStorage.setItem('streakData', JSON.stringify(data));
+                    notificationManager.scheduleNotification(data.notificationTime, data);
+                    updateNotificationStatus();
+                    document.getElementById('testNotification').style.display = 'block';
+                    showSurprise('special', '🔔 Daily reminders enabled!');
+                } catch (error) {
+                    console.error('Notification setup failed:', error);
+                    showSurprise('special', `⚠️ ${error.message}`);
+                    data.notificationsEnabled = false;
+                    localStorage.setItem('streakData', JSON.stringify(data));
+                    updateNotificationStatus();
+                }
             }
-            data.currentStreak = 1;
-        }
-    } else {
-        data.currentStreak = 1;
-    }
-    
-    data.bestStreak = Math.max(data.currentStreak, data.bestStreak);
-    data.totalCheckins++;
-    data.lastCheckIn = now.toISOString();
-    data.checkedDates.push(now.toDateString());
 
-    if (surprises.streakMilestones[data.currentStreak]) {
-        showSurprise('milestone', surprises.streakMilestones[data.currentStreak]);
-    }
+            function updateNotificationStatus() {
+                const statusDiv = document.getElementById('notificationStatus');
+                if (data.notificationsEnabled) {
+                    statusDiv.className = 'notification-status enabled';
+                    statusDiv.textContent = `Notifications enabled - Daily reminder at ${data.notificationTime}`;
+                } else {
+                    statusDiv.className = 'notification-status disabled';
+                    statusDiv.textContent = 'Notifications are disabled';
+                }
+            }
 
-    if (Math.random() < 0.3) {
-        const message = surprises.randomEncouragement[
-            Math.floor(Math.random() * surprises.randomEncouragement.length)
-        ];
-        showSurprise('special', message);
-    }
+            // Event listeners for notification-related buttons
+            document.getElementById('enableNotifications').addEventListener('click', setupNotifications);
 
-    checkSpecialAchievements();
-    localStorage.setItem('streakData', JSON.stringify(data));
-    updateUI();
-});
+            document.getElementById('testNotification').addEventListener('click', () => {
+                showSurprise('special', '🔔 Test notification will appear in 5 seconds. You can close the app now to see how badges work!');
+                
+                setTimeout(() => {
+                    const notification = notificationManager.showNotification(data, true);
+                    if (!notification) {
+                        showSurprise('special', '⚠️ Unable to send test notification. Please check notification permissions.');
+                    }
+                }, 5000);
+            });
 
-// Settings toggle
-document.getElementById('settingsButton').addEventListener('click', () => {
-    const settings = document.getElementById('settings');
-    settings.style.display = settings.style.display === 'none' ? 'block' : 'none';
-});
+            // Initialize
+            function initialize() {
+                document.getElementById('activityNameInput').value = data.activityName;
+                document.getElementById('activityName').textContent = 
+                    data.activityName || 'do your activity';
+                document.getElementById('notificationTime').value = data.notificationTime;
+                updateUI();
+                updateNotificationStatus();
+                
+                if (data.notificationsEnabled) {
+                    notificationManager.scheduleNotification(data.notificationTime, data);
+                }
 
-// Activity name handling
-document.getElementById('activityNameInput').addEventListener('input', (e) => {
-    const sanitizedInput = e.target.value.replace(/[<>]/g, '');
-    data.activityName = sanitizedInput;
-    document.getElementById('activityName').textContent = 
-        sanitizedInput || 'do your activity';
-    localStorage.setItem('streakData', JSON.stringify(data));
-});
+                if (data.totalCheckins === 0) {
+                    showSurprise('special', '👋 Welcome! Ready to build an amazing streak?');
+                }
+            }
 
-// Notification time change handler
-document.getElementById('notificationTime').addEventListener('change', (e) => {
-    data.notificationTime = e.target.value;
-    localStorage.setItem('streakData', JSON.stringify(data));
-    if (data.notificationsEnabled) {
-        notificationManager.scheduleNotification(data.notificationTime, data);
-        updateNotificationStatus();
-    }
-});
+            // Event Listeners
+            document.getElementById('checkInButton').addEventListener('click', () => {
+                const now = new Date();
+                const lastCheck = data.lastCheckIn ? new Date(data.lastCheckIn) : null;
+                
+                if (lastCheck) {
+                    const daysSinceLastCheck = Math.floor((now - lastCheck) / (1000 * 60 * 60 * 24));
+                    
+                    if (daysSinceLastCheck <= 1) {
+                        data.currentStreak++;
+                    } else {
+                        if (data.currentStreak > 1) {
+                            showSurprise('special', surprises.specialDays.comebackDay);
+                        }
+                        data.currentStreak = 1;
+                    }
+                } else {
+                    data.currentStreak = 1;
+                }
+                
+                data.bestStreak = Math.max(data.currentStreak, data.bestStreak);
+                data.totalCheckins++;
+                data.lastCheckIn = now.toISOString();
+                data.checkedDates.push(now.toDateString());
 
-// Notification button handlers
-document.getElementById('enableNotifications').addEventListener('click', setupNotifications);
+                if (surprises.streakMilestones[data.currentStreak]) {
+                    showSurprise('milestone', surprises.streakMilestones[data.currentStreak]);
+                }
 
-document.getElementById('testNotification').addEventListener('click', () => {
-    showSurprise('special', '🔔 Test notification will appear in 10 seconds. You can close the app now to see how it works!');
-    
-    setTimeout(() => {
-        const notification = notificationManager.showNotification(data, true);
-        if (!notification) {
-            showSurprise('special', '⚠️ Unable to send test notification. Please check notification permissions.');
-        }
-    }, 10000);
-});
+                if (Math.random() < 0.3) {
+                    const message = surprises.randomEncouragement[
+                        Math.floor(Math.random() * surprises.randomEncouragement.length)
+                    ];
+                    showSurprise('special', message);
+                }
 
-// Reset data handler
-document.getElementById('resetData').addEventListener('click', () => {
-    if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
-        data = {
-            currentStreak: 0,
-            bestStreak: 0,
-            totalCheckins: 0,
-            lastCheckIn: null,
-            checkedDates: [],
-            notificationTime: '16:00',
-            activityName: data.activityName, // Preserve activity name
-            achievements: [],
-            milestones: [],
-            secretUnlocks: [],
-            perfectWeeks: 0,
-            notificationsEnabled: false
-        };
-        localStorage.setItem('streakData', JSON.stringify(data));
-        updateUI();
-        showSurprise('special', '🔄 Fresh start! Time to build new records!');
-        updateNotificationStatus();
-    }
-});
+                checkSpecialAchievements();
+                localStorage.setItem('streakData', JSON.stringify(data));
+                updateUI();
+            });
 
-// Initialize the app
-initialize();
+            // Settings toggle
+            document.getElementById('settingsButton').addEventListener('click', () => {
+                const settings = document.getElementById('settings');
+                settings.style.display = settings.style.display === 'none' ? 'block' : 'none';
+            });
+
+            // Activity name handling
+            document.getElementById('activityNameInput').addEventListener('input', (e) => {
+                const sanitizedInput = e.target.value.replace(/[<>]/g, '');
+                data.activityName = sanitizedInput;
+                document.getElementById('activityName').textContent = 
+                    sanitizedInput || 'do your activity';
+                localStorage.setItem('streakData', JSON.stringify(data));
+            });
+
+            // Notification time change handler
+            document.getElementById('notificationTime').addEventListener('change', (e) => {
+                data.notificationTime = e.target.value;
+                localStorage.setItem('streakData', JSON.stringify(data));
+                if (data.notificationsEnabled) {
+                    notificationManager.scheduleNotification(data.notificationTime, data);
+                    updateNotificationStatus();
+                }
+            });
+
+            // Reset data handler
+            document.getElementById('resetData').addEventListener('click', () => {
+                if (confirm('Are you sure you want to reset all data? This cannot be undone.')) {
+                    data = {
+                        currentStreak: 0,
+                        bestStreak: 0,
+                        totalCheckins: 0,
+                        lastCheckIn: null,
+                        checkedDates: [],
+                        notificationTime: '16:00',
+                        activityName: data.activityName, // Preserve activity name
+                        achievements: [],
+                        milestones: [],
+                        secretUnlocks: [],
+                        perfectWeeks: 0,
+                        notificationsEnabled: false
+                    };
+                    localStorage.setItem('streakData', JSON.stringify(data));
+                    updateUI();
+                    showSurprise('special', '🔄 Fresh start! Time to build new records!');
+                    updateNotificationStatus();
+                }
+            });
+
+            // Clear badge when opening the app
+            window.addEventListener('focus', () => {
+                notificationManager.clearBadge();
+            });
+
+            // Initialize the app
+            initialize();
+        });
     </script>
 </body>
 </html>
